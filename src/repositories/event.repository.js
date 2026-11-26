@@ -1,13 +1,16 @@
+import { createError } from "../utils/error.util.js";
 
-const { Op } = require("sequelize");
-const { Event } = require("../models");
+import sequelizeLibrary from "sequelize";
+import { Event } from "../models/index.js";
+
+const { Op } = sequelizeLibrary;
 
 const createEvent = async (data) => {
   return Event.create(data);
 };
 
-const findEventById = async (id) => {
-  return Event.findByPk(id);
+const findEventById = async (id, transaction) => {
+  return Event.findByPk(id, { transaction, lock: transaction?.LOCK.UPDATE });
 };
 
 const findEventBySlug = async (slug) => {
@@ -61,10 +64,18 @@ const updateEvent = async (
   updates,
   options = {}
 ) => {
-  return event.update(updates, options);
+  const [updated, rows] = await Event.update(updates, {
+    ...options,
+    where: { id: event.id, status: event.status },
+    returning: true,
+  });
+  if (updated === 0) {
+    throw createError("Event status changed. Refresh and retry.", 409);
+  }
+  return rows[0];
 };
 
-module.exports = {
+export {
   createEvent,
   findEventById,
   findEventBySlug,

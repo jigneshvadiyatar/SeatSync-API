@@ -1,7 +1,7 @@
 
-const authService = require("../services/auth.service");
-const sessionService = require("../services/session.service");
-const { generateAccessToken } = require("../utils/token.util");
+import * as authService from "../services/auth.service.js";
+import * as sessionService from "../services/session.service.js";
+import { accessTokenTtl, generateAccessToken } from "../utils/token.util.js";
 
 const register = async (req, res, next) => {
   try {
@@ -44,7 +44,7 @@ const login = async (req, res, next) => {
         accessToken,
         refreshToken: session.refreshToken,
         tokenType: "Bearer",
-        expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || "15m",
+        expiresIn: accessTokenTtl(),
       },
     });
   } catch (error) {
@@ -113,7 +113,7 @@ const logoutAll = async (req, res, next) => {
 
 
 
-module.exports = {
+export {
   register,
   login,
   getMe,

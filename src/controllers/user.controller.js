@@ -1,5 +1,5 @@
 
-const userService = require("../services/user.service");
+import * as userService from "../services/user.service.js";
 
 // GET /api/v1/users/me
 const getProfile = async (req, res, next) => {
@@ -89,7 +89,13 @@ const revokeSession = async (req, res, next) => {
   }
 };
 
-module.exports = {
+const getUsers = async (req, res) => {
+  const data = await userService.getUsers(req.query);
+  res.json({ success: true, data });
+};
+
+export {
+  getUsers,
   getProfile,
   updateProfile,
   changePassword,

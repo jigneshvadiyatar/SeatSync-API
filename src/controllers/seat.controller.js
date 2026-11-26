@@ -1,5 +1,5 @@
 
-const seatService = require("../services/seat.service");
+import * as seatService from "../services/seat.service.js";
 
 const createCategory = async (req, res, next) => {
   try {
@@ -135,7 +135,7 @@ const deleteSeat = async (req, res, next) => {
   }
 };
 
-module.exports = {
+export {
   createCategory,
   getCategories,
   updateCategory,

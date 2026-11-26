@@ -1,5 +1,7 @@
 
-const { body, param, query } = require("express-validator");
+import expressValidator from "express-validator";
+
+const { body, param, query } = expressValidator;
 
 const SHOW_STATUSES = [
   "scheduled",
@@ -152,7 +154,7 @@ const listShowsValidator = [
     .custom(validDateTime),
 ];
 
-module.exports = {
+export {
   showIdValidator,
   createShowValidator,
   updateShowValidator,

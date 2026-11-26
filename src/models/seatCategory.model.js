@@ -1,6 +1,8 @@
 
-const { DataTypes } = require("sequelize");
-const sequelize = require("../config/database");
+import sequelizeLibrary from "sequelize";
+import sequelize from "../config/database.js";
+
+const { DataTypes } = sequelizeLibrary;
 
 const SeatCategory = sequelize.define(
   "SeatCategory",
@@ -36,4 +38,4 @@ const SeatCategory = sequelize.define(
   }
 );
 
-module.exports = SeatCategory;
+export default SeatCategory;

@@ -1,6 +1,8 @@
 
-const { DataTypes } = require("sequelize");
-const sequelize = require("../config/database");
+import sequelizeLibrary from "sequelize";
+import sequelize from "../config/database.js";
+
+const { DataTypes } = sequelizeLibrary;
 
 const Hall = sequelize.define(
   "Hall",
@@ -58,5 +60,5 @@ const Hall = sequelize.define(
   }
 );
 
-module.exports = Hall;
+export default Hall;
     

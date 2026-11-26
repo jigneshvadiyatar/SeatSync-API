@@ -1,5 +1,7 @@
 
-const { validationResult } = require("express-validator");
+import expressValidator from "express-validator";
+
+const { validationResult } = expressValidator;
 
 const validate = (req, res, next) => {
   const errors = validationResult(req);
@@ -9,7 +11,7 @@ const validate = (req, res, next) => {
       success: false,
       message: "Validation failed",
       errors: errors.array().map((error) => ({
-        field: error.path,
+        field: error.path ?? error.fields?.map((field) => field.path).join(", "),
         message: error.msg,
       })),
     });
@@ -18,4 +20,4 @@ const validate = (req, res, next) => {
   next();
 };
 
-module.exports = validate;
+export default validate;

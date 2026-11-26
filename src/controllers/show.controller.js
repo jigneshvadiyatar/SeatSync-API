@@ -1,5 +1,6 @@
+import * as eventService from "../services/event.service.js";
 
-const showService = require("../services/show.service");
+import * as showService from "../services/show.service.js";
 
 const createShow = async (req, res, next) => {
   try {
@@ -99,7 +100,15 @@ const cancelShow = async (req, res, next) => {
   }
 };
 
-module.exports = {
+const getEventShows = async (req, res) => {
+  const admin = req.user?.role === "admin";
+  const event = await eventService.getEventById(req.params.id, admin);
+  const data = await showService.getShows({ ...req.query, event_id: event.id }, admin);
+  res.json({ success: true, data });
+};
+
+export {
+  getEventShows,
   createShow,
   getShows,
   getShowById,

@@ -1,24 +1,19 @@
+import * as showController from "../controllers/show.controller.js";
+import { listShowsValidator } from "../validators/show.validator.js";
 
-const express = require("express");
+import express from "express";
 
-const controller = require("../controllers/event.controller");
+import * as controller from "../controllers/event.controller.js";
 
-const {
-  eventIdValidator,
-  createEventValidator,
-  updateEventValidator,
-  listEventsValidator,
-} = require("../validators/event.validator");
+import { eventIdValidator, createEventValidator, updateEventValidator, listEventsValidator } from "../validators/event.validator.js";
 
-const validate = require("../middlewares/validate.middleware");
+import validate from "../middlewares/validate.middleware.js";
 
-const {
-  authenticate,
-} = require("../middlewares/auth.middleware");
+import { authenticate } from "../middlewares/auth.middleware.js";
 
-const {
-  authorize,
-} = require("../middlewares/authorize.middleware");
+import { authorize } from "../middlewares/authorize.middleware.js";
+
+import { optionalAuthenticate } from "../middlewares/optionalAuth.middleware.js";
 
 const router = express.Router();
 
@@ -26,14 +21,6 @@ const adminOnly = [
   authenticate,
   authorize("admin"),
 ];
-
-const optionalAuthenticate = (req, res, next) => {
-  if (!req.headers.authorization) {
-    return next();
-  }
-
-  return authenticate(req, res, next);
-};
 
 // PUBLIC: List published events
 // ADMIN: List draft, published, and archived events
@@ -101,4 +88,13 @@ router.delete(
   controller.deleteEvent
 );
 
-module.exports = router;
+router.get(
+  "/:id/shows",
+  optionalAuthenticate,
+  eventIdValidator,
+  listShowsValidator,
+  validate,
+  showController.getEventShows
+);
+
+export default router;

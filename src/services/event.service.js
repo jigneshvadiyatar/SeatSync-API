@@ -1,10 +1,14 @@
+import sequelize from "../config/database.js";
+import { assertEventUnreserved } from "../repositories/hold.repository.js";
+
+import sequelizeLibrary from "sequelize";
+
+import crypto from "node:crypto";
+import * as repository from "../repositories/event.repository.js";
 
 const {
   UniqueConstraintError,
-} = require("sequelize");
-
-const crypto = require("node:crypto");
-const repository = require("../repositories/event.repository");
+} = sequelizeLibrary;
 
 const createError = (message, statusCode) => {
   const error = new Error(message);
@@ -73,8 +77,8 @@ const generateSlug = (title) => {
   return `${base || "event"}-${suffix}`;
 };
 
-const getExistingEvent = async (id) => {
-  const event = await repository.findEventById(id);
+const getExistingEvent = async (id, transaction) => {
+  const event = await repository.findEventById(id, transaction);
 
   if (!event) {
     throw createError("Event not found", 404);
@@ -229,42 +233,46 @@ const publishEvent = async (id) => {
 };
 
 // UNPUBLISH EVENT
-const unpublishEvent = async (id) => {
-  const event = await getExistingEvent(id);
+const unpublishEvent = async (id) =>
+  sequelize.transaction(async (transaction) => {
+    const event = await getExistingEvent(id, transaction);
 
-  if (event.status !== "published") {
-    throw createError(
-      "Only published events can be unpublished",
-      409
-    );
-  }
+    if (event.status !== "published") {
+      throw createError(
+        "Only published events can be unpublished",
+        409
+      );
+    }
 
-  return repository.updateEvent(event, {
-    status: "draft",
+    await assertEventUnreserved(event.id, transaction);
+    return repository.updateEvent(event, {
+      status: "draft",
+    }, { transaction });
   });
-};
 
 // ARCHIVE EVENT (SOFT DELETE)
-const deleteEvent = async (id) => {
-  const event = await getExistingEvent(id);
+const deleteEvent = async (id) =>
+  sequelize.transaction(async (transaction) => {
+    const event = await getExistingEvent(id, transaction);
 
-  if (event.status === "archived") {
-    throw createError(
-      "Event is already archived",
-      409
-    );
-  }
+    if (event.status === "archived") {
+      throw createError(
+        "Event is already archived",
+        409
+      );
+    }
 
-  await repository.updateEvent(event, {
-    status: "archived",
+    await assertEventUnreserved(event.id, transaction);
+    await repository.updateEvent(event, {
+      status: "archived",
+    }, { transaction });
+
+    return {
+      message: "Event archived successfully",
+    };
   });
 
-  return {
-    message: "Event archived successfully",
-  };
-};
-
-module.exports = {
+export {
   createEvent,
   getEvents,
   getEventById,

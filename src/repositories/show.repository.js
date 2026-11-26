@@ -1,15 +1,9 @@
 
-const { Op } = require("sequelize");
+import sequelizeLibrary from "sequelize";
 
-const {
-  sequelize,
-  Event,
-  Venue,
-  Hall,
-  SeatCategory,
-  Show,
-  ShowSeatPrice,
-} = require("../models");
+import { sequelize, Event, Venue, Hall, SeatCategory, Show, ShowSeatPrice } from "../models/index.js";
+
+const { Op } = sequelizeLibrary;
 
 const findEventById = (id, transaction, lock = false) =>
   Event.findByPk(id, {
@@ -96,6 +90,7 @@ const showIncludes = [
       "is_active",
     ],
     required: true,
+    include: [{ model: Venue, as: "venue", attributes: ["id", "is_active"], required: true }],
   },
   {
     model: ShowSeatPrice,
@@ -128,6 +123,9 @@ const findShowById = (id, transaction) =>
     include: showIncludes,
     transaction,
   });
+
+const findShowPrices = (showId, transaction) =>
+  ShowSeatPrice.findAll({ where: { show_id: showId }, attributes: ["seat_category_id", "price"], transaction });
 
 const createShow = async (
   data,
@@ -218,6 +216,14 @@ const findShows = ({
           "is_active",
         ],
         required: true,
+        ...(publishedOnly ? { where: { is_active: true } } : {}),
+        include: [{
+          model: Venue,
+          as: "venue",
+          attributes: ["id", "is_active"],
+          required: true,
+          ...(publishedOnly ? { where: { is_active: true } } : {}),
+        }],
       },
       {
         model: ShowSeatPrice,
@@ -274,7 +280,7 @@ const replaceShowPrices = async (
   return findShowById(showId, transaction);
 };
 
-module.exports = {
+export {
   sequelize,
   findEventById,
   findVenueById,
@@ -282,6 +288,7 @@ module.exports = {
   findSeatCategoriesByIds,
   findAllSeatCategoriesByHallId,
   findShowRecordById,
+  findShowPrices,
   findShowById,
   createShow,
   findShows,

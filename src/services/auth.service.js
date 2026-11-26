@@ -1,9 +1,9 @@
-const bcrypt = require("bcrypt");
-const { UniqueConstraintError } = require("sequelize");
-const authRepository = require("../repositories/auth.repository");
-const { generateAccessToken } = require("../utils/token.util");
 
-const SALT_ROUNDS = 12;
+import argon2 from "argon2";
+import sequelizeLibrary from "sequelize";
+import * as authRepository from "../repositories/auth.repository.js";
+
+const { UniqueConstraintError } = sequelizeLibrary;
 
 const registerUser = async ({ name, email, password }) => {
   // Normalize the email before checking the database
@@ -18,8 +18,10 @@ const registerUser = async ({ name, email, password }) => {
     throw error;
   }
 
-  // Hash password before storing it
-  const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+  // Hash password using Argon2id before storing
+  const passwordHash = await argon2.hash(password, {
+    type: argon2.argon2id,
+  });
 
   let user;
 
@@ -57,28 +59,26 @@ const loginUser = async ({ email, password }) => {
 
   const user = await authRepository.findUserByEmail(normalizedEmail);
 
+  // Return a generic error so callers cannot enumerate valid emails.
   if (!user || !user.password_hash) {
     const error = new Error("Invalid email or password");
     error.statusCode = 401;
     throw error;
   }
 
-  const isPasswordValid = await bcrypt.compare(
-    password,
-    user.password_hash
+  const isPasswordValid = await argon2.verify(
+    user.password_hash,
+    password
   );
 
-  if (!isPasswordValid) {
+  if (!isPasswordValid || !user.is_active) {
     const error = new Error("Invalid email or password");
     error.statusCode = 401;
     throw error;
   }
 
-  if (!user.is_active) {
-    const error = new Error("Account is disabled");
-    error.statusCode = 403;
-    throw error;
-  }
+  // Update last login timestamp (fire-and-forget — do not block the response)
+  authRepository.updateLastLogin(user.id).catch(() => {});
 
   return {
     id: user.id,
@@ -90,7 +90,7 @@ const loginUser = async ({ email, password }) => {
 
 
 
-module.exports = {
+export {
     registerUser,
     loginUser,
 };

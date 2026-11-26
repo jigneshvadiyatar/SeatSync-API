@@ -1,5 +1,7 @@
 
-const { body, param, query } = require("express-validator");
+import expressValidator from "express-validator";
+
+const { body, param, query } = expressValidator;
 
 const EVENT_CATEGORIES = [
   "movie",
@@ -163,7 +165,7 @@ const listEventsValidator = [
     .withMessage("Invalid event status"),
 ];
 
-module.exports = {
+export {
   eventIdValidator,
   createEventValidator,
   updateEventValidator,

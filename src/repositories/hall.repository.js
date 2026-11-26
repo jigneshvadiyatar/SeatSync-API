@@ -1,6 +1,8 @@
 
-const { Op } = require("sequelize");
-const { Hall, Venue } = require("../models");
+import sequelizeLibrary from "sequelize";
+import { Hall, Venue } from "../models/index.js";
+
+const { Op } = sequelizeLibrary;
 
 const findVenueById = async (venueId) => {
   return Venue.findByPk(venueId);
@@ -10,8 +12,10 @@ const createHall = async (data) => {
   return Hall.create(data);
 };
 
-const findHallById = async (id) => {
+const findHallById = async (id, transaction) => {
   return Hall.findByPk(id, {
+    transaction,
+    ...(transaction ? { lock: { level: transaction.LOCK.UPDATE, of: Hall } } : {}),
     include: [
       {
         model: Venue,
@@ -77,17 +81,17 @@ const findHallByCode = async (venueId, code) => {
   });
 };
 
-const updateHall = async (hall, updates) => {
-  return hall.update(updates);
+const updateHall = async (hall, updates, transaction) => {
+  return hall.update(updates, { transaction });
 };
 
-const deactivateHall = async (hall) => {
+const deactivateHall = async (hall, transaction) => {
   return hall.update({
     is_active: false,
-  });
+  }, { transaction });
 };
 
-module.exports = {
+export {
   findVenueById,
   createHall,
   findHallById,

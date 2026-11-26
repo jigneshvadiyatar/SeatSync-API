@@ -8,7 +8,7 @@ const errorHandler = (err, req, res, next) => {
       : 500;
 
   if (statusCode >= 500) {
-    console.error("Unhandled error:", err);
+    console.error("Unhandled request error", { name: err.name, code: err.original?.code });
   }
 
   return res.status(statusCode).json({
@@ -20,4 +20,4 @@ const errorHandler = (err, req, res, next) => {
   });
 };
 
-module.exports = errorHandler;
+export default errorHandler;

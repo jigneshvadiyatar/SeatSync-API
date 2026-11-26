@@ -1,9 +1,10 @@
+import sequelize from "../config/database.js";
 
-const express = require("express");
+import express from "express";
 
 const router = express.Router();
 
-router.get("/", (req, res) => {
+router.get(["/", "/live"], (req, res) => {
   return res.status(200).json({
     success: true,
     message: "SeatSync API is running",
@@ -13,4 +14,13 @@ router.get("/", (req, res) => {
   });
 });
 
-module.exports = router;
+router.get("/ready", async (req, res) => {
+  try {
+    await sequelize.authenticate();
+    res.json({ success: true, message: "PostgreSQL is ready" });
+  } catch {
+    res.status(503).json({ success: false, message: "PostgreSQL is unavailable" });
+  }
+});
+
+export default router;

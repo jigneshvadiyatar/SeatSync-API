@@ -1,25 +1,21 @@
 
-const express = require("express");
+import express from "express";
 
-const controller = require("../controllers/show.controller");
+import expressValidator from "express-validator";
+import * as holds from "../controllers/hold.controller.js";
+import * as controller from "../controllers/show.controller.js";
 
-const {
-  showIdValidator,
-  createShowValidator,
-  updateShowValidator,
-  showPricesValidator,
-  listShowsValidator,
-} = require("../validators/show.validator");
+import { showIdValidator, createShowValidator, updateShowValidator, showPricesValidator, listShowsValidator } from "../validators/show.validator.js";
 
-const validate = require("../middlewares/validate.middleware");
+import validate from "../middlewares/validate.middleware.js";
 
-const {
-  authenticate,
-} = require("../middlewares/auth.middleware");
+import { authenticate } from "../middlewares/auth.middleware.js";
 
-const {
-  authorize,
-} = require("../middlewares/authorize.middleware");
+import { authorize } from "../middlewares/authorize.middleware.js";
+
+import { optionalAuthenticate } from "../middlewares/optionalAuth.middleware.js";
+
+const { body, param } = expressValidator;
 
 const router = express.Router();
 
@@ -27,14 +23,6 @@ const adminOnly = [
   authenticate,
   authorize("admin"),
 ];
-
-const optionalAuthenticate = (req, res, next) => {
-  if (!req.headers.authorization) {
-    return next();
-  }
-
-  return authenticate(req, res, next);
-};
 
 // PUBLIC: List upcoming shows for published events.
 // ADMIN: List shows with optional status filters.
@@ -94,4 +82,17 @@ router.patch(
   controller.cancelShow
 );
 
-module.exports = router;
+const showId = param("showId").isUUID();
+router.get("/:showId/seats", optionalAuthenticate, showId, validate, holds.getShowSeats);
+router.get("/:showId/availability", optionalAuthenticate, showId, validate, holds.getAvailability);
+router.post(
+  "/:showId/holds",
+  authenticate,
+  showId,
+  body("seatIds").isArray({ min: 1, max: 10 }).bail(),
+  body("seatIds.*").isString().bail().isUUID(),
+  validate,
+  holds.createHold
+);
+
+export default router;

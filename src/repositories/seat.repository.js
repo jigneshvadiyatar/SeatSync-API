@@ -1,11 +1,8 @@
 
-const { Op } = require("sequelize");
-const {
-  Hall,
-  Venue,
-  Seat,
-  SeatCategory,
-} = require("../models");
+import sequelizeLibrary from "sequelize";
+import { Hall, Venue, Seat, SeatCategory } from "../models/index.js";
+
+const { Op } = sequelizeLibrary;
 
 const findHall = (hallId, options = {}) =>
   Hall.findByPk(hallId, {
@@ -25,6 +22,12 @@ const findHallForUpdate = (hallId, transaction) =>
     lock: transaction.LOCK.UPDATE,
   });
 
+const findVenueForUpdate = (venueId, transaction) =>
+  Venue.findByPk(venueId, { transaction, lock: transaction.LOCK.UPDATE });
+
+const findSeatForUpdate = (seatId, transaction) =>
+  Seat.findByPk(seatId, { transaction, lock: transaction.LOCK.UPDATE });
+
 const findCategory = (categoryId, options = {}) =>
   SeatCategory.findByPk(categoryId, options);
 
@@ -39,8 +42,8 @@ const findCategoryByCode = (hallId, code) =>
     where: { hall_id: hallId, code },
   });
 
-const createCategory = (data) =>
-  SeatCategory.create(data);
+const createCategory = (data, transaction) =>
+  SeatCategory.create(data, { transaction });
 
 const updateCategory = (category, data) =>
   category.update(data);
@@ -55,9 +58,23 @@ const findSeat = (seatId) =>
     ],
   });
 
+/**
+ * Count ALL seats (active + inactive) for a hall.
+ * Used internally if you need to know total physical seats.
+ */
 const countSeats = (hallId, transaction) =>
   Seat.count({
     where: { hall_id: hallId },
+    transaction,
+  });
+
+/**
+ * FIX: Count only ACTIVE seats for capacity enforcement.
+ * Deactivated seats no longer occupy usable positions.
+ */
+const countActiveSeats = (hallId, transaction) =>
+  Seat.count({
+    where: { hall_id: hallId, is_active: true },
     transaction,
   });
 
@@ -89,17 +106,20 @@ const bulkCreateSeats = (seats, transaction) =>
 const updateSeat = (seat, data, transaction) =>
   seat.update(data, { transaction });
 
-const findCategoryInHall = (hallId, categoryId) =>
+const findCategoryInHall = (hallId, categoryId, transaction) =>
   SeatCategory.findOne({
     where: {
       id: categoryId,
       hall_id: hallId,
     },
+    transaction,
   });
 
-module.exports = {
+export {
   findHall,
   findHallForUpdate,
+  findVenueForUpdate,
+  findSeatForUpdate,
   findCategory,
   findCategories,
   findCategoryByCode,
@@ -107,6 +127,7 @@ module.exports = {
   updateCategory,
   findSeat,
   countSeats,
+  countActiveSeats,
   findSeats,
   bulkCreateSeats,
   updateSeat,

@@ -1,7 +1,7 @@
 
-const crypto = require("node:crypto");
+import crypto from "node:crypto";
 
-const REFRESH_TOKEN_DAYS = 7;
+const REFRESH_TOKEN_DAYS = Number(process.env.REFRESH_TOKEN_TTL_DAYS) || 7;
 
 const generateRefreshToken = () => {
   return crypto.randomBytes(64).toString("hex");
@@ -24,7 +24,7 @@ const getRefreshTokenExpiry = () => {
   return expiresAt;
 };
 
-module.exports = {
+export {
   generateRefreshToken,
   hashRefreshToken,
   getRefreshTokenExpiry,

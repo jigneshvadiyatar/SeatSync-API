@@ -1,6 +1,8 @@
 
-const { DataTypes } = require("sequelize");
-const sequelize = require("../config/database");
+import sequelizeLibrary from "sequelize";
+import sequelize from "../config/database.js";
+
+const { DataTypes } = sequelizeLibrary;
 
 const Venue = sequelize.define(
   "Venue",
@@ -71,4 +73,4 @@ const Venue = sequelize.define(
   }
 );
 
-module.exports = Venue;
+export default Venue;

@@ -1,31 +1,18 @@
 
-const express = require("express");
+import express from "express";
 
-const venueController = require("../controllers/venue.controller");
-const { venueHallRouter,} = require("./hall.routes");
+import * as venueController from "../controllers/venue.controller.js";
+import { venueHallRouter } from "./hall.routes.js";
 
-const {
-  createVenueValidator,
-  updateVenueValidator,
-  venueIdValidator,
-  listVenuesValidator,
-} = require("../validators/venue.validator");
+import { createVenueValidator, updateVenueValidator, venueIdValidator, listVenuesValidator } from "../validators/venue.validator.js";
 
-const validate = require("../middlewares/validate.middleware");
-const { authenticate } = require("../middlewares/auth.middleware");
-const { authorize } = require("../middlewares/authorize.middleware");
+import validate from "../middlewares/validate.middleware.js";
+import { authenticate } from "../middlewares/auth.middleware.js";
+import { authorize } from "../middlewares/authorize.middleware.js";
 
 const router = express.Router();
 
-// Authentication is optional for public GET endpoints.
-// If a token is supplied, it must be valid.
-const optionalAuthenticate = (req, res, next) => {
-  if (!req.headers.authorization) {
-    return next();
-  }
-
-  return authenticate(req, res, next);
-};
+import { optionalAuthenticate } from "../middlewares/optionalAuth.middleware.js";
 
 // PUBLIC: List active venues
 // ADMIN: Can also view inactive venues
@@ -81,4 +68,4 @@ router.delete(
   venueController.deleteVenue
 );
 
-module.exports = router;
+export default router;

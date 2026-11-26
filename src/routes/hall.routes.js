@@ -1,26 +1,16 @@
 
-const express = require("express");
+import express from "express";
 
-const hallController = require("../controllers/hall.controller");
-const { hallSeatRouter } = require("./seat.routes");
+import * as hallController from "../controllers/hall.controller.js";
+import { hallSeatRouter } from "./seat.routes.js";
 
-const {
-  hallIdValidator,
-  venueIdValidator,
-  createHallValidator,
-  updateHallValidator,
-  listHallsValidator,
-} = require("../validators/hall.validator");
+import { hallIdValidator, venueIdValidator, createHallValidator, updateHallValidator, listHallsValidator } from "../validators/hall.validator.js";
 
-const validate = require("../middlewares/validate.middleware");
+import validate from "../middlewares/validate.middleware.js";
 
-const {
-  authenticate,
-} = require("../middlewares/auth.middleware");
+import { authenticate } from "../middlewares/auth.middleware.js";
 
-const {
-  authorize,
-} = require("../middlewares/authorize.middleware");
+import { authorize } from "../middlewares/authorize.middleware.js";
 
 const venueHallRouter = express.Router({
   mergeParams: true,
@@ -92,7 +82,7 @@ hallRouter.delete(
   hallController.deleteHall
 );
 
-module.exports = {
+export {
   venueHallRouter,
   hallRouter,
 };

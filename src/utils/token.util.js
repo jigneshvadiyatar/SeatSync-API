@@ -1,5 +1,7 @@
 
-const jwt = require("jsonwebtoken");
+import jwt from "jsonwebtoken";
+
+const accessTokenTtl = () => process.env.JWT_ACCESS_TTL || process.env.JWT_ACCESS_EXPIRES_IN || "15m";
 
 const generateAccessToken = (user, sessionId) => {
   if (!process.env.JWT_ACCESS_SECRET) {
@@ -18,7 +20,7 @@ const generateAccessToken = (user, sessionId) => {
     process.env.JWT_ACCESS_SECRET,
     {
       subject: String(user.id),
-      expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || "15m",
+      expiresIn: accessTokenTtl(),
       algorithm: "HS256",
     }
   );
@@ -31,7 +33,8 @@ const verifyAccessToken = (token) => {
   });
 };
 
-module.exports = {
+export {
+  accessTokenTtl,
   generateAccessToken,
   verifyAccessToken,
 };

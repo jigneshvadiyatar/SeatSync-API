@@ -1,119 +1,83 @@
-const sequelize = require("../config/database");
+import sequelize from "../config/database.js";
 
-const User = require("./user.model");
-const UserSession = require("./userSession.model");
-const Venue = require("./venue.model");
-const Hall = require("./hall.model");
-const SeatCategory = require("./seatCategory.model");
-const Seat = require("./seat.model");
-const Event = require("./event.model");
-const Show = require("./show.model");
-const ShowSeatPrice = require("./show-seat-price.model");
+import User from "./user.model.js";
+import UserSession from "./userSession.model.js";
+import Venue from "./venue.model.js";
+import Hall from "./hall.model.js";
+import SeatCategory from "./seatCategory.model.js";
+import Seat from "./seat.model.js";
+import Event from "./event.model.js";
+import Show from "./show.model.js";
+import ShowSeatPrice from "./show-seat-price.model.js";
+import SeatHold from "./seatHold.model.js";
+import SeatHoldItem from "./seatHoldItem.model.js";
+import Booking from "./booking.model.js";
+import BookingItem from "./bookingItem.model.js";
+import ShowSeatAllocation from "./showSeatAllocation.model.js";
 
-// User -> UserSession
-User.hasMany(UserSession, {
-  foreignKey: "user_id",
-  as: "sessions",
-  onDelete: "CASCADE",
-});
+// ── User ↔ UserSession ───────────────────────────────────────────────────────
+User.hasMany(UserSession, { foreignKey: "user_id", as: "sessions", onDelete: "CASCADE" });
+UserSession.belongsTo(User, { foreignKey: "user_id", as: "user" });
 
-UserSession.belongsTo(User, {
-  foreignKey: "user_id",
-  as: "user",
-});
+// ── Venue ↔ Hall ─────────────────────────────────────────────────────────────
+Venue.hasMany(Hall, { foreignKey: "venue_id", as: "halls", onDelete: "RESTRICT" });
+Hall.belongsTo(Venue, { foreignKey: "venue_id", as: "venue" });
 
-// Venue -> Hall
-Venue.hasMany(Hall, {
-  foreignKey: "venue_id",
-  as: "halls",
-  onDelete: "RESTRICT",
-});
+// ── Hall ↔ SeatCategory ──────────────────────────────────────────────────────
+Hall.hasMany(SeatCategory, { foreignKey: "hall_id", as: "seatCategories" });
+SeatCategory.belongsTo(Hall, { foreignKey: "hall_id", as: "hall" });
 
-Hall.belongsTo(Venue, {
-  foreignKey: "venue_id",
-  as: "venue",
-});
+// ── Hall ↔ Seat ───────────────────────────────────────────────────────────────
+Hall.hasMany(Seat, { foreignKey: "hall_id", as: "seats" });
+Seat.belongsTo(Hall, { foreignKey: "hall_id", as: "hall" });
 
-// Hall -> SeatCategory
+// ── SeatCategory ↔ Seat ───────────────────────────────────────────────────────
+SeatCategory.hasMany(Seat, { foreignKey: "category_id", as: "seats", constraints: false });
+Seat.belongsTo(SeatCategory, { foreignKey: "category_id", as: "category", constraints: false });
 
-Hall.hasMany(SeatCategory, {
-  foreignKey: "hall_id",
-  as: "seatCategories",
-});
+// ── Event ↔ Show ─────────────────────────────────────────────────────────────
+Event.hasMany(Show, { foreignKey: "event_id", as: "shows" });
+Show.belongsTo(Event, { foreignKey: "event_id", as: "event" });
 
-SeatCategory.belongsTo(Hall, {
-  foreignKey: "hall_id",
-  as: "hall",
-});
+// ── Hall ↔ Show ───────────────────────────────────────────────────────────────
+Hall.hasMany(Show, { foreignKey: "hall_id", as: "shows" });
+Show.belongsTo(Hall, { foreignKey: "hall_id", as: "hall" });
 
-Hall.hasMany(Seat, {
-  foreignKey: "hall_id",
-  as: "seats",
-});
+// ── Show ↔ ShowSeatPrice ─────────────────────────────────────────────────────
+Show.hasMany(ShowSeatPrice, { foreignKey: "show_id", as: "seatPrices" });
+ShowSeatPrice.belongsTo(Show, { foreignKey: "show_id", as: "show" });
 
-Seat.belongsTo(Hall, {
-  foreignKey: "hall_id",
-  as: "hall",
-});
+// ── SeatCategory ↔ ShowSeatPrice ─────────────────────────────────────────────
+SeatCategory.hasMany(ShowSeatPrice, { foreignKey: "seat_category_id", as: "showPrices" });
+ShowSeatPrice.belongsTo(SeatCategory, { foreignKey: "seat_category_id", as: "seatCategory" });
 
-SeatCategory.hasMany(Seat, {
-  foreignKey: "category_id",
-  as: "seats",
-  constraints: false,
-});
+// ── SeatHold ↔ Show / User ───────────────────────────────────────────────────
+Show.hasMany(SeatHold, { foreignKey: "show_id", as: "holds" });
+SeatHold.belongsTo(Show, { foreignKey: "show_id", as: "show" });
 
-Seat.belongsTo(SeatCategory, {
-  foreignKey: "category_id",
-  as: "category",
-  constraints: false,
-});
+User.hasMany(SeatHold, { foreignKey: "user_id", as: "holds" });
+SeatHold.belongsTo(User, { foreignKey: "user_id", as: "user" });
 
-// Event <-> Show
-Event.hasMany(Show, {
-  foreignKey: "event_id",
-  as: "shows",
-});
+// ── SeatHold ↔ SeatHoldItem ──────────────────────────────────────────────────
+SeatHold.hasMany(SeatHoldItem, { foreignKey: "hold_id", as: "items", onDelete: "CASCADE" });
+SeatHoldItem.belongsTo(SeatHold, { foreignKey: "hold_id", as: "hold" });
 
-Show.belongsTo(Event, {
-  foreignKey: "event_id",
-  as: "event",
-});
+SeatHoldItem.belongsTo(Seat, { foreignKey: "seat_id", as: "seat" });
+Seat.hasMany(SeatHoldItem, { foreignKey: "seat_id", as: "holdItems" });
 
-// Hall <-> Show
-Hall.hasMany(Show, {
-  foreignKey: "hall_id",
-  as: "shows",
-});
+// ── ShowSeatAllocation ────────────────────────────────────────────────────────
+Show.hasMany(ShowSeatAllocation, { foreignKey: "show_id", as: "allocations" });
+ShowSeatAllocation.belongsTo(Show, { foreignKey: "show_id", as: "show" });
 
-Show.belongsTo(Hall, {
-  foreignKey: "hall_id",
-  as: "hall",
-});
+Seat.hasMany(ShowSeatAllocation, { foreignKey: "seat_id", as: "allocations" });
+ShowSeatAllocation.belongsTo(Seat, { foreignKey: "seat_id", as: "seat" });
 
-// Show <-> ShowSeatPrice
-Show.hasMany(ShowSeatPrice, {
-  foreignKey: "show_id",
-  as: "seatPrices",
-});
+Booking.hasMany(BookingItem, { foreignKey: "booking_id", as: "items" });
+BookingItem.belongsTo(Booking, { foreignKey: "booking_id", as: "booking" });
 
-ShowSeatPrice.belongsTo(Show, {
-  foreignKey: "show_id",
-  as: "show",
-});
-
-// SeatCategory <-> ShowSeatPrice
-SeatCategory.hasMany(ShowSeatPrice, {
-  foreignKey: "seat_category_id",
-  as: "showPrices",
-});
-
-ShowSeatPrice.belongsTo(SeatCategory, {
-  foreignKey: "seat_category_id",
-  as: "seatCategory",
-});
-
-
-module.exports = {
+export {
+  Booking,
+  BookingItem,
   sequelize,
   User,
   UserSession,
@@ -123,5 +87,8 @@ module.exports = {
   Seat,
   Event,
   Show,
-  ShowSeatPrice
+  ShowSeatPrice,
+  SeatHold,
+  SeatHoldItem,
+  ShowSeatAllocation,
 };

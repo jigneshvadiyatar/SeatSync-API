@@ -1,5 +1,7 @@
 
-const { body, param, query } = require("express-validator");
+import expressValidator from "express-validator";
+
+const { body, param, query } = expressValidator;
 
 const createVenueValidator = [
   body("name")
@@ -175,7 +177,7 @@ const listVenuesValidator = [
     .withMessage("is_active must be true, false, or all"),
 ];
 
-module.exports = {
+export {
   createVenueValidator,
   updateVenueValidator,
   venueIdValidator,

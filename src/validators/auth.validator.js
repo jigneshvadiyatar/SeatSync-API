@@ -1,5 +1,7 @@
 
-const { body } = require("express-validator");
+import expressValidator from "express-validator";
+
+const { body } = expressValidator;
 
 const registerValidator = [
   body("name")
@@ -11,16 +13,20 @@ const registerValidator = [
     .isLength({ min: 2, max: 100 })
     .withMessage("Name must be between 2 and 100 characters"),
 
+  // FIX: Use only .isEmail() + manual toLowerCase() in service.
+  // Do NOT use .normalizeEmail() — it applies opinionated transforms
+  // (strips Gmail dots, removes +tags) that differ from service-side
+  // normalization (trim + toLowerCase), causing login mismatches.
   body("email")
     .isEmail()
     .withMessage("Please provide a valid email address")
-    .normalizeEmail(),
+    .toLowerCase(),
 
   body("password")
     .isString()
     .withMessage("Password must be a string")
-    .isLength({ min: 8, max: 72 })
-    .withMessage("Password must be between 8 and 72 characters")
+    .isLength({ min: 8, max: 128 })
+    .withMessage("Password must be between 8 and 128 characters")
     .matches(/[A-Z]/)
     .withMessage("Password must contain an uppercase letter")
     .matches(/[a-z]/)
@@ -55,7 +61,7 @@ const refreshValidator = [
 
 
 
-module.exports = {
+export {
   registerValidator,
   loginValidator,
   refreshValidator,

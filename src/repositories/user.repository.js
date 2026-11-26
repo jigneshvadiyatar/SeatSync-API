@@ -1,6 +1,8 @@
 
-const { Op } = require("sequelize");
-const { User, UserSession } = require("../models");
+import sequelizeLibrary from "sequelize";
+import { User, UserSession } from "../models/index.js";
+
+const { Op } = sequelizeLibrary;
 
 const findUserById = async (userId, options = {}) => {
   return User.findByPk(userId, options);
@@ -75,7 +77,23 @@ const revokeAllSessions = async (userId, options = {}) => {
   );
 };
 
-module.exports = {
+const findUsers = ({ page, limit, search }) => {
+  const where = {};
+  if (search) {
+    const pattern = '%' + search.replace(/[\\%_]/g, "\\$&") + '%';
+    where[Op.or] = [{ name: { [Op.iLike]: pattern } }, { email: { [Op.iLike]: pattern } }];
+  }
+  return User.findAndCountAll({
+    where,
+    attributes: ["id", "name", "email", "role", "is_active", "createdAt"],
+    order: [["createdAt", "DESC"], ["id", "ASC"]],
+    limit,
+    offset: (page - 1) * limit,
+  });
+};
+
+export {
+  findUsers,
   findUserById,
   updateUser,
   findActiveSessions,

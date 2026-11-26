@@ -1,5 +1,7 @@
 
-const { body, param } = require("express-validator");
+import expressValidator from "express-validator";
+
+const { body, param } = expressValidator;
 
 const hallIdValidator = [
   param("hallId")
@@ -108,8 +110,7 @@ const createSeatsValidator = [
       const row = req.body.rows[index];
 
       return (
-        Number.isInteger(row.from) &&
-        Number(value) >= row.from
+        Number(value) >= Number(row?.from)
       );
     })
     .withMessage("Ending seat must be >= starting seat"),
@@ -121,8 +122,9 @@ const createSeatsValidator = [
 
 const updateSeatValidator = [
   body("category_id")
+    .optional()
     .isUUID()
-    .withMessage("Valid category_id is required"),
+    .withMessage("Invalid category_id"),
 
   body("hall_id")
     .not()
@@ -140,12 +142,12 @@ const updateSeatValidator = [
     .withMessage("Changing seat position is not supported"),
 
   body("is_active")
-    .not()
-    .exists()
-    .withMessage("Use the deactivation endpoint"),
+    .optional()
+    .isBoolean({ strict: true })
+    .withMessage("is_active must be a boolean"),
 ];
 
-module.exports = {
+export {
   hallIdValidator,
   categoryIdValidator,
   seatIdValidator,

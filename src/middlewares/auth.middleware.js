@@ -1,6 +1,6 @@
 
-const { verifyAccessToken } = require("../utils/token.util");
-const { User, UserSession } = require("../models");
+import { verifyAccessToken } from "../utils/token.util.js";
+import { User, UserSession } from "../models/index.js";
 
 const authenticate = async (req, res, next) => {
   try {
@@ -85,6 +85,6 @@ const authenticate = async (req, res, next) => {
   }
 };
 
-module.exports = {
+export {
   authenticate,
 };

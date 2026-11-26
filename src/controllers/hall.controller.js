@@ -1,5 +1,5 @@
 
-const hallService = require("../services/hall.service");
+import * as hallService from "../services/hall.service.js";
 
 const createHall = async (req, res, next) => {
   try {
@@ -85,7 +85,7 @@ const deleteHall = async (req, res, next) => {
   }
 };
 
-module.exports = {
+export {
   createHall,
   getHalls,
   getHallById,

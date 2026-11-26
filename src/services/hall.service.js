@@ -1,6 +1,11 @@
+import sequelize from "../config/database.js";
+import { countActiveSeats } from "../repositories/seat.repository.js";
+import { assertHallUnreserved } from "../repositories/hold.repository.js";
 
-const { UniqueConstraintError } = require("sequelize");
-const hallRepository = require("../repositories/hall.repository");
+import sequelizeLibrary from "sequelize";
+import * as hallRepository from "../repositories/hall.repository.js";
+
+const { UniqueConstraintError } = sequelizeLibrary;
 
 const createError = (message, statusCode) => {
   const error = new Error(message);
@@ -48,8 +53,8 @@ const getExistingVenue = async (venueId) => {
   return venue;
 };
 
-const getExistingHall = async (id) => {
-  const hall = await hallRepository.findHallById(id);
+const getExistingHall = async (id, transaction) => {
+  const hall = await hallRepository.findHallById(id, transaction);
 
   if (!hall) {
     throw createError("Hall not found", 404);
@@ -166,69 +171,75 @@ const getHallById = async (id, isAdmin = false) => {
 };
 
 // UPDATE
-const updateHall = async (id, payload) => {
-  const hall = await getExistingHall(id);
+const updateHall = async (id, payload) =>
+  sequelize.transaction(async (transaction) => {
+    const hall = await getExistingHall(id, transaction);
 
-  if (!hall.is_active) {
-    throw createError(
-      "Cannot update an inactive hall",
-      409
-    );
-  }
-
-  if (!hall.venue?.is_active) {
-    throw createError(
-      "Cannot update a hall in an inactive venue",
-      409
-    );
-  }
-
-  const updates = normalizeHallData(payload);
-
-  if (Object.keys(updates).length === 0) {
-    throw createError(
-      "No valid fields provided for update",
-      400
-    );
-  }
-
-  if (updates.code && updates.code !== hall.code) {
-    const duplicate = await hallRepository.findHallByCode(
-      hall.venue_id,
-      updates.code
-    );
-
-    if (duplicate) {
+    if (!hall.is_active) {
       throw createError(
-        "A hall with this code already exists in the venue",
+        "Cannot update an inactive hall",
         409
       );
     }
-  }
 
-  try {
-    return await hallRepository.updateHall(hall, updates);
-  } catch (error) {
-    handleUniqueCodeError(error);
-  }
-};
+    if (!hall.venue?.is_active) {
+      throw createError(
+        "Cannot update a hall in an inactive venue",
+        409
+      );
+    }
+
+    const updates = normalizeHallData(payload);
+
+    if (Object.keys(updates).length === 0) {
+      throw createError(
+        "No valid fields provided for update",
+        400
+      );
+    }
+
+    if (updates.code && updates.code !== hall.code) {
+      const duplicate = await hallRepository.findHallByCode(
+        hall.venue_id,
+        updates.code
+      );
+
+      if (duplicate) {
+        throw createError(
+          "A hall with this code already exists in the venue",
+          409
+        );
+      }
+    }
+
+    try {
+      if (updates.capacity !== undefined && await countActiveSeats(id, transaction) > Number(updates.capacity)) {
+        throw createError("Capacity cannot be lower than the active seat count", 409);
+      }
+      return await hallRepository.updateHall(hall, updates, transaction);
+    } catch (error) {
+      handleUniqueCodeError(error);
+    }
+  });
 
 // SOFT DELETE
-const deleteHall = async (id) => {
-  const hall = await getExistingHall(id);
+const deleteHall = async (id) =>
+  sequelize.transaction(async (transaction) => {
+    const hall = await getExistingHall(id, transaction);
 
-  if (!hall.is_active) {
-    throw createError("Hall is already inactive", 409);
-  }
+    if (!hall.is_active) {
+      throw createError("Hall is already inactive", 409);
+    }
 
-  await hallRepository.deactivateHall(hall);
+    await assertHallUnreserved(hall.id, transaction);
+    await hallRepository.deactivateHall(hall, transaction);
 
-  return {
-    message: "Hall deactivated successfully",
-  };
-};
+    return {
+      message: "Hall deactivated successfully",
+    };
+  });
 
-module.exports = {
+export {
   createHall,
   getHalls,
   getHallById,

@@ -1,9 +1,7 @@
 
-const bcrypt = require("bcrypt");
-const sequelize = require("../config/database");
-const userRepository = require("../repositories/user.respsitory");
-
-const SALT_ROUNDS = 12;
+import argon2 from "argon2";
+import sequelize from "../config/database.js";
+import * as userRepository from "../repositories/user.repository.js";
 
 const createError = (message, statusCode) => {
   const error = new Error(message);
@@ -92,18 +90,18 @@ const changePassword = async (
       );
     }
 
-    const isValid = await bcrypt.compare(
-      currentPassword,
-      user.password_hash
+    const isValid = await argon2.verify(
+      user.password_hash,
+      currentPassword
     );
 
     if (!isValid) {
       throw createError("Current password is incorrect", 401);
     }
 
-    const isSamePassword = await bcrypt.compare(
-      newPassword,
-      user.password_hash
+    const isSamePassword = await argon2.verify(
+      user.password_hash,
+      newPassword
     );
 
     if (isSamePassword) {
@@ -113,10 +111,9 @@ const changePassword = async (
       );
     }
 
-    const newPasswordHash = await bcrypt.hash(
-      newPassword,
-      SALT_ROUNDS
-    );
+    const newPasswordHash = await argon2.hash(newPassword, {
+      type: argon2.argon2id,
+    });
 
     await userRepository.updateUser(
       user,
@@ -174,7 +171,15 @@ const revokeSession = async (
   };
 };
 
-module.exports = {
+const getUsers = async (query) => {
+  const page = Number(query.page || 1);
+  const limit = Number(query.limit || 20);
+  const { rows, count } = await userRepository.findUsers({ page, limit, search: query.search });
+  return { users: rows, pagination: { page, limit, total: count, totalPages: Math.ceil(count / limit) } };
+};
+
+export {
+  getUsers,
   getProfile,
   updateProfile,
   changePassword,

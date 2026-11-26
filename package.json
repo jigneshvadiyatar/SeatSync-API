@@ -2,16 +2,18 @@
   "name": "seatsync-api",
   "version": "1.0.0",
   "description": "SeatSync is a real-time event ticket booking and seat reservation platform inspired by applications like BookMyShow.",
-  "main": "index.js",
+  "main": "src/app.js",
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "db:migrate": "sequelize-cli db:migrate",
-    "db:migrate:undo": "sequelize-cli db:migrate:undo",
-    "db:migrate:status": "sequelize-cli db:migrate:status",
-    "db:migrate:create": "sequelize-cli migration:generate",
-    "db:seed": "sequelize-cli db:seed:all",
-    "db:seed:undo": "sequelize-cli db:seed:undo:all"
+    "db:migrate": "sequelize-cli db:migrate --options-path .sequelizerc.cjs",
+    "db:migrate:undo": "sequelize-cli db:migrate:undo --options-path .sequelizerc.cjs",
+    "db:migrate:status": "sequelize-cli db:migrate:status --options-path .sequelizerc.cjs",
+    "db:migrate:create": "sequelize-cli migration:generate --options-path .sequelizerc.cjs",
+    "db:seed": "sequelize-cli db:seed:all --options-path .sequelizerc.cjs",
+    "db:seed:undo": "sequelize-cli db:seed:undo:all --options-path .sequelizerc.cjs",
+    "test": "node --test",
+    "admin:promote": "node src/scripts/promoteAdmin.js"
   },
   "repository": {
     "type": "git",
@@ -25,6 +27,8 @@
   },
   "homepage": "https://github.com/jigneshvadiyatar/SeatSync-API#readme",
   "dependencies": {
+    "amqplib": "^2.4.1",
+    "argon2": "^0.45.2",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
     "dotenv": "^18.0.10",
@@ -35,9 +39,14 @@
     "morgan": "^1.12.1",
     "pg": "^8.23.1",
     "pg-hstore": "^2.3.4",
+    "redis": "^6.4.0",
     "sequelize": "^6.37.8"
   },
   "devDependencies": {
     "sequelize-cli": "^6.6.5"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=22"
   }
 }

@@ -1,5 +1,5 @@
 
-const venueService = require("../services/venue.service");
+import * as venueService from "../services/venue.service.js";
 
 const createVenue = async (req, res, next) => {
   try {
@@ -85,7 +85,7 @@ const deleteVenue = async (req, res, next) => {
   }
 };
 
-module.exports = {
+export {
   createVenue,
   getVenues,
   getVenueById,

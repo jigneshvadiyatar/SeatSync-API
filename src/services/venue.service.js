@@ -1,5 +1,7 @@
+import sequelize from "../config/database.js";
+import { assertVenueUnreserved } from "../repositories/hold.repository.js";
 
-const venueRepository = require("../repositories/venue.respository");
+import * as venueRepository from "../repositories/venue.repository.js";
 
 const createError = (message, statusCode) => {
   const error = new Error(message);
@@ -57,7 +59,7 @@ const getVenues = async (query, isAdmin = false) => {
 
   if (!isAdmin && ["false", "all"].includes(query.is_active)) {
     throw createError("Admin access required for this filter", 403);
-}
+  }
 
   const { rows, count } = await venueRepository.findVenues({
     page,
@@ -98,6 +100,11 @@ const updateVenue = async (id, payload) => {
     throw createError("Venue not found", 404);
   }
 
+  // FIX: Prevent updating a soft-deleted (inactive) venue.
+  if (!venue.is_active) {
+    throw createError("Cannot update an inactive venue", 409);
+  }
+
   const updates = normalizeVenueData(payload);
 
   if (Object.keys(updates).length === 0) {
@@ -108,25 +115,27 @@ const updateVenue = async (id, payload) => {
 };
 
 // SOFT DELETE VENUE
-const deleteVenue = async (id) => {
-  const venue = await venueRepository.findVenueById(id);
+const deleteVenue = async (id) =>
+  sequelize.transaction(async (transaction) => {
+    const venue = await venueRepository.findVenueById(id, transaction);
 
-  if (!venue) {
-    throw createError("Venue not found", 404);
-  }
+    if (!venue) {
+      throw createError("Venue not found", 404);
+    }
 
-  if (!venue.is_active) {
-    throw createError("Venue is already inactive", 409);
-  }
+    if (!venue.is_active) {
+      throw createError("Venue is already inactive", 409);
+    }
 
-  await venueRepository.deactivateVenue(venue);
+    await assertVenueUnreserved(venue.id, transaction);
+    await venueRepository.deactivateVenue(venue, transaction);
 
-  return {
-    message: "Venue deactivated successfully",
-  };
-};
+    return {
+      message: "Venue deactivated successfully",
+    };
+  });
 
-module.exports = {
+export {
   createVenue,
   getVenues,
   getVenueById,

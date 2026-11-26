@@ -1,5 +1,5 @@
 
-const { UserSession } = require("../models");
+import { UserSession } from "../models/index.js";
 
 const createSession = async (sessionData) => {
   return UserSession.create(sessionData);
@@ -49,7 +49,7 @@ const revokeAllUserSessions = async (userId) => {
   );
 };
 
-module.exports = {
+export {
   createSession,
   findSessionByTokenHash,
   findSessionById,

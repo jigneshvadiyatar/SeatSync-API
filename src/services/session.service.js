@@ -1,16 +1,14 @@
 
-const { Op } = require("sequelize");
-const sequelize = require("../config/database");
-const sessionRepository = require("../repositories/session.repository");
+import sequelizeLibrary from "sequelize";
+import sequelize from "../config/database.js";
+import * as sessionRepository from "../repositories/session.repository.js";
 
-const {
-  generateRefreshToken,
-  hashRefreshToken,
-  getRefreshTokenExpiry,
-} = require("../utils/refreshToken.util");
+import { generateRefreshToken, hashRefreshToken, getRefreshTokenExpiry } from "../utils/refreshToken.util.js";
 
-const { generateAccessToken } = require("../utils/token.util");
-const { User } = require("../models");
+import { accessTokenTtl, generateAccessToken } from "../utils/token.util.js";
+import { User } from "../models/index.js";
+
+const { Op } = sequelizeLibrary;
 
 const createSession = async (user, metadata = {}) => {
   const refreshToken = generateRefreshToken();
@@ -81,23 +79,16 @@ const refreshSession = async (refreshToken) => {
     );
 
     return {
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
+      accessToken: generateAccessToken(user, session.id),
       refreshToken: nextRefreshToken,
     };
   });
 
-  const accessToken = generateAccessToken(result.user);
-
   return {
-    accessToken,
+    accessToken: result.accessToken,
     refreshToken: result.refreshToken,
     tokenType: "Bearer",
-    expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || "15m",
+    expiresIn: accessTokenTtl(),
   };
 };
 
@@ -125,7 +116,7 @@ const logoutAllSessions = async (userId) => {
   return { message: "Logged out from all devices" };
 };
 
-module.exports = {
+export {
   createSession,
   refreshSession,
   logoutSession,

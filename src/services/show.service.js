@@ -1,5 +1,6 @@
+import { assertShowsUnreserved } from "../repositories/hold.repository.js";
 
-const repository = require("../repositories/show.repository");
+import * as repository from "../repositories/show.repository.js";
 
 const createError = (message, statusCode) => {
   const error = new Error(message);
@@ -285,9 +286,9 @@ const createShow = async (payload) => {
           throw createError("Event not found", 404);
         }
 
-        if (event.status === "archived") {
+        if (event.status !== "published") {
           throw createError(
-            "Cannot schedule an archived event",
+            "Only published events can be scheduled",
             409
           );
         }
@@ -425,6 +426,8 @@ const getShowById = async (id, isAdmin = false) => {
     const isPublic =
       show.status === "scheduled" &&
       show.event.status === "published" &&
+      show.hall.is_active &&
+      show.hall.venue.is_active &&
       new Date(show.starts_at) > new Date();
 
     if (!isPublic) {
@@ -461,6 +464,7 @@ const updateShow = async (id, payload) => {
         );
 
         assertEditable(show);
+        await assertShowsUnreserved([show.id], transaction);
 
         const schedule = validateSchedule(
           payload,
@@ -501,6 +505,7 @@ const updateShowPrices = async (id, payload) => {
         );
 
         assertEditable(show);
+        await assertShowsUnreserved([show.id], transaction);
 
         await validateCategories(
           priceRows,
@@ -521,6 +526,9 @@ const updateShowPrices = async (id, payload) => {
 };
 
 // CANCEL SHOW
+// FIX: Separated from assertEditable — a show that has already started
+// can still be operationally cancelled (e.g., technical failure, artist
+// cancellation). Only the status check applies; the timing gate is removed.
 const cancelShow = async (id) => {
   try {
     return await repository.sequelize.transaction(
@@ -531,8 +539,18 @@ const cancelShow = async (id) => {
           true
         );
 
-        assertEditable(show);
+        if (!show) {
+          throw createError("Show not found", 404);
+        }
 
+        if (show.status !== "scheduled") {
+          throw createError(
+            "Only scheduled shows can be cancelled",
+            409
+          );
+        }
+
+        await assertShowsUnreserved([show.id], transaction);
         await repository.updateShow(
           show,
           { status: "cancelled" },
@@ -547,13 +565,13 @@ const cancelShow = async (id) => {
   }
 };
 
-module.exports = {
+// FIX: Only export public API — internal helpers (validateSchedule,
+// validateCategories) are no longer exported to prevent misuse.
+export {
   createShow,
   getShows,
   getShowById,
   updateShow,
   updateShowPrices,
   cancelShow,
-  validateSchedule,
-validateCategories,
 };

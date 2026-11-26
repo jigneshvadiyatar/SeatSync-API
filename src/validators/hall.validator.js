@@ -1,5 +1,7 @@
 
-const { body, param, query } = require("express-validator");
+import expressValidator from "express-validator";
+
+const { body, param, query } = expressValidator;
 
 const hallIdValidator = [
   param("id")
@@ -128,7 +130,7 @@ const listHallsValidator = [
     .withMessage("Invalid is_active filter"),
 ];
 
-module.exports = {
+export {
   hallIdValidator,
   venueIdValidator,
   createHallValidator,

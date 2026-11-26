@@ -1,5 +1,7 @@
 
-const { body, param } = require("express-validator");
+import expressValidator from "express-validator";
+
+const { body, param } = expressValidator;
 
 const updateProfileValidator = [
   body("name")
@@ -62,7 +64,7 @@ const revokeSessionValidator = [
     .withMessage("Invalid session ID"),
 ];
 
-module.exports = {
+export {
   updateProfileValidator,
   changePasswordValidator,
   revokeSessionValidator,

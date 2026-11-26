@@ -1,6 +1,8 @@
 
-const { Op } = require("sequelize");
-const { Venue } = require("../models");
+import sequelizeLibrary from "sequelize";
+import { Venue } from "../models/index.js";
+
+const { Op } = sequelizeLibrary;
 
 const createVenue = async (venueData) => {
   return Venue.create(venueData);
@@ -11,7 +13,7 @@ const findVenues = async ({
   limit = 10,
   city,
   search,
-  is_active = true,
+  is_active,
 }) => {
   const where = {};
 
@@ -26,8 +28,11 @@ const findVenues = async ({
   }
 
   if (search) {
+    // FIX: Escape ILIKE wildcard characters from user input.
+    const escaped = search.replace(/[\\%_]/g, "\\$&");
+
     where.name = {
-      [Op.iLike]: `%${search}%`,
+      [Op.iLike]: `%${escaped}%`,
     };
   }
 
@@ -44,21 +49,21 @@ const findVenues = async ({
   });
 };
 
-const findVenueById = async (id) => {
-  return Venue.findByPk(id);
+const findVenueById = async (id, transaction) => {
+  return Venue.findByPk(id, { transaction, lock: transaction?.LOCK.UPDATE });
 };
 
 const updateVenue = async (venue, updates) => {
   return venue.update(updates);
 };
 
-const deactivateVenue = async (venue) => {
+const deactivateVenue = async (venue, transaction) => {
   return venue.update({
     is_active: false,
-  });
+  }, { transaction });
 };
 
-module.exports = {
+export {
   createVenue,
   findVenues,
   findVenueById,
